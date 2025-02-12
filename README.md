@@ -14,6 +14,7 @@ TenisMatchAPI é uma aplicação full-stack que utiliza Machine Learning para re
 - Pandas
 - NumPy
 - SQLite
+- Swagger UI (OpenAPI)
 
 ### Frontend
 - React
@@ -77,7 +78,17 @@ cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 O servidor estará disponível em: http://localhost:8000
-Documentação da API: http://localhost:8000/docs
+
+### Documentação da API
+A documentação interativa da API está disponível em:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+A documentação inclui:
+- Descrição detalhada de todos os endpoints
+- Schemas com exemplos
+- Interface interativa para testes
+- Modelos de requisição e resposta
 
 ### Frontend
 ```bash
@@ -95,6 +106,10 @@ tenismatch/
 │   │   ├── __init__.py
 │   │   ├── main.py
 │   │   ├── models.py
+│   │   ├── schemas/
+│   │   │   └── tennis.py
+│   │   ├── api/
+│   │   │   └── routes.py
 │   │   └── ml/
 │   │       ├── dataset.py
 │   │       └── training.py
@@ -129,8 +144,10 @@ tenismatch/
 
 4. **API REST**
    - Endpoints para CRUD completo
-   - Documentação interativa com Swagger
+   - Documentação interativa com Swagger UI e ReDoc
    - Sistema de validação robusto
+   - Exemplos e schemas detalhados
+   - Interface de teste integrada
 
 ## 📊 Modelo de Machine Learning
 
@@ -201,6 +218,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - Abra uma issue
 - Envie um email para support@tenismatch.com
 - Consulte a documentação completa em: https://docs.tenismatch.com
+- Explore a documentação da API em: http://localhost:8000/docs
 
 ## 🔄 Próximos Passos
 
