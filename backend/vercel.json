@@ -1,26 +1,13 @@
 {
     "version": 2,
     "builds": [{
-        "src": "./app/main.py",
+        "src": "vercel_handler.py",
         "use": "@vercel/python"
     }],
     "routes": [
         {
-            "src": "/api/v1/(.*)",
-            "dest": "./app/main.py"
-        },
-        {
             "src": "/(.*)",
-            "dest": "./app/main.py"
+            "dest": "vercel_handler.py"
         }
-    ],
-    "env": {
-        "APP_ENV": "production"
-    },
-    "functions": {
-        "app/main.py": {
-            "memory": 1024,
-            "maxDuration": 10
-        }
-    }
+    ]
 }
