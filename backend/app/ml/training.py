@@ -1,4 +1,6 @@
 # /backend/app/ml/training.py
+import os
+from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -13,6 +15,7 @@ from sklearn.metrics import (
 import joblib
 import numpy as np
 from typing import Dict, Any, Tuple, List
+from datetime import datetime
 from app.core.config import settings
 from app.schemas.tennis import ModelMetricsComplete, ROCPoint, ConfusionMatrixItem
 
@@ -41,7 +44,7 @@ class ModelTraining:
         y_prob = self.model.predict_proba(X_test)[:, 1]
         
         # Calcula métricas básicas
-        metrics = {
+        metrics_dict = {
             "accuracy": float(accuracy_score(y_test, y_pred)),
             "precision": float(precision_score(y_test, y_pred)),
             "recall": float(recall_score(y_test, y_pred)),
@@ -79,11 +82,15 @@ class ModelTraining:
             self.model.feature_importances_
         ))
         
-        return ModelMetricsComplete(
-            **metrics,
+        # Cria objeto de métricas completo
+        metrics = ModelMetricsComplete(
+            **metrics_dict,
             roc_curve_data=roc_data,
-            confusion_matrix=cm_data
-        ), feature_importance
+            confusion_matrix=cm_data,
+            training_date=datetime.utcnow()  # Adicionando a data de treinamento
+        )
+        
+        return metrics, feature_importance
     
     def predict(self, X) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -95,10 +102,16 @@ class ModelTraining:
     
     def save_model(self, filename: str = None):
         """
-        Salva o modelo treinado
+        Salva o modelo treinado, criando o diretório se necessário
         """
         if filename is None:
             filename = settings.MODEL_PATH
+            
+        # Cria o diretório se não existir
+        model_dir = os.path.dirname(filename)
+        if model_dir:
+            Path(model_dir).mkdir(parents=True, exist_ok=True)
+            
         joblib.dump(self.model, filename)
     
     def load_model(self, filename: str = None):
@@ -107,5 +120,9 @@ class ModelTraining:
         """
         if filename is None:
             filename = settings.MODEL_PATH
+            
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"Arquivo do modelo não encontrado: {filename}")
+            
         self.model = joblib.load(filename)
         return self.model

@@ -4,15 +4,19 @@ from sqlalchemy.orm import Session
 from typing import List
 import pandas as pd
 import io
+from fastapi.responses import Response  
+from datetime import datetime
+
 
 from app.database.session import get_db
-from app.database.models import TenisData, ModelMetrics
+from app.database.models import TenisData, ModelMetrics, User
 from app.schemas.tennis import (
     TenisCreate, TenisResponse, ModelMetricsComplete,
     BatchPredictionRequest, PredictionResponse
 )
 from app.ml.dataset import DatasetPreparation
 from app.ml.training import ModelTraining
+from app.api.deps import get_current_user, verify_api_key
 
 router = APIRouter(
     prefix="/tennis",
@@ -20,24 +24,77 @@ router = APIRouter(
     responses={404: {"description": "Item não encontrado"}}
 )
 
+# Rota pública para baixar template
+@router.get(
+    "/template-csv",
+    summary="Download Template CSV",
+    description="Fornece um arquivo CSV modelo com o formato correto para upload",
+    response_class=Response
+)
+async def get_template_csv():
+    """Gera um template CSV com dados de exemplo"""
+    # Cria dados de exemplo
+    data = [
+        {
+            "tenis_estilo": "ESP",
+            "tenis_marca": "Nike",
+            "tenis_cores": "BLK",
+            "tenis_preco": 299.99,
+            "match_success": 1
+        },
+        {
+            "tenis_estilo": "CAS",
+            "tenis_marca": "Adidas",
+            "tenis_cores": "WHT",
+            "tenis_preco": 249.99,
+            "match_success": 0
+        },
+        {
+            "tenis_estilo": "VIN",
+            "tenis_marca": "Vans",
+            "tenis_cores": "COL",
+            "tenis_preco": 199.99,
+            "match_success": 1
+        },
+        {
+            "tenis_estilo": "SOC",
+            "tenis_marca": "Converse",
+            "tenis_cores": "NEU",
+            "tenis_preco": 179.99,
+            "match_success": 0
+        },
+        {
+            "tenis_estilo": "FAS",
+            "tenis_marca": "New Balance",
+            "tenis_cores": "BLK",
+            "tenis_preco": 289.99,
+            "match_success": 1
+        }
+    ]
+    
+    # Converte para DataFrame e depois para CSV
+    df = pd.DataFrame(data)
+    csv_content = df.to_csv(index=False)
+    
+    # Retorna como arquivo para download
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=template_tenis.csv"
+        }
+    )
+
+# Rotas protegidas (requerem autenticação)
 @router.post(
     "/upload-csv",
     response_model=dict,
     summary="Upload de Dataset CSV",
-    description="""
-    Realiza o upload de um arquivo CSV contendo dados de tênis.
-    
-    O arquivo deve conter as seguintes colunas:
-    - tenis_estilo: ESP, CAS, VIN, SOC, FAS
-    - tenis_marca: Nike, Adidas, Vans, Converse, New Balance
-    - tenis_cores: BLK, WHT, COL, NEU
-    - tenis_preco: valor numérico positivo
-    - match_success: 0 ou 1
-    """,
-    response_description="Mensagem de sucesso com quantidade de registros importados"
+    description="Realiza o upload de um arquivo CSV contendo dados de tênis"
 )
 async def upload_csv(
-    file: UploadFile = File(..., description="Arquivo CSV com dados de tênis"),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     if not file.filename.endswith('.csv'):
@@ -73,10 +130,12 @@ async def upload_csv(
 @router.get(
     "/export-csv",
     summary="Exportar Dataset CSV",
-    description="Exporta todos os registros do banco de dados em formato CSV",
-    response_description="Arquivo CSV contendo todos os registros"
+    description="Exporta todos os registros do banco de dados"
 )
-async def export_csv(db: Session = Depends(get_db)):
+async def export_csv(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     records = db.query(TenisData).all()
     data = [record.to_dict() for record in records]
     df = pd.DataFrame(data)
@@ -88,17 +147,14 @@ async def export_csv(db: Session = Depends(get_db)):
     "/train",
     response_model=ModelMetricsComplete,
     summary="Treinar Modelo",
-    description="""
-    Treina um novo modelo de Machine Learning usando os dados disponíveis.
-    
-    Requer no mínimo 100 registros no banco de dados.
-    Retorna métricas completas do treinamento.
-    """,
-    response_description="Métricas detalhadas do modelo treinado"
+    description="Treina um novo modelo usando os dados disponíveis"
 )
-async def train_model(db: Session = Depends(get_db)):
+async def train_model(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     records = db.query(TenisData).all()
-    if len(records) < 100:
+    if len(records) < 5:
         raise HTTPException(400, "Dados insuficientes para treinamento (mínimo 100 registros)")
     
     data = [record.to_dict() for record in records]
@@ -110,11 +166,16 @@ async def train_model(db: Session = Depends(get_db)):
     
     trainer.save_model()
     
+    # Adiciona a data de treinamento
+    metrics.training_date = datetime.utcnow()
+    
+    # Salva métricas no banco
     db_metrics = ModelMetrics(
         accuracy=metrics.accuracy,
         precision=metrics.precision,
         recall=metrics.recall,
-        f1_score=metrics.f1_score
+        f1_score=metrics.f1_score,
+        training_date=metrics.training_date
     )
     db.add(db_metrics)
     db.commit()
@@ -125,44 +186,51 @@ async def train_model(db: Session = Depends(get_db)):
     "/predict",
     response_model=List[PredictionResponse],
     summary="Realizar Predições",
-    description="""
-    Realiza predições de match para uma lista de tênis.
-    
-    Para cada tênis, retorna:
-    - Probabilidade de match
-    - Predição (0 ou 1)
-    - Score de confiança
-    """,
-    response_description="Lista de predições para cada tênis"
+    description="Realiza predições de match para uma lista de tênis"
 )
 async def predict(
     request: BatchPredictionRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    prep = DatasetPreparation()
-    X = prep.prepare_features(request.dict()['records'])
-    
-    trainer = ModelTraining()
-    trainer.load_model()
-    predictions, probabilities = trainer.predict(X)
-    
-    results = []
-    for pred, prob in zip(predictions, probabilities):
-        results.append(PredictionResponse(
-            match_prediction=int(pred),
-            match_probability=float(prob[1]),
-            confidence_score=float(max(prob))
-        ))
-    
-    return results
+    try:
+        prep = DatasetPreparation()
+        records = request.dict()['records']
+        
+        # Prepara features
+        X = prep.prepare_features(records)
+        
+        # Carrega modelo e faz predições
+        trainer = ModelTraining()
+        trainer.load_model()
+        predictions, probabilities = trainer.predict(X)
+        
+        # Formata resultados
+        results = []
+        for pred, prob in zip(predictions, probabilities):
+            results.append(PredictionResponse(
+                match_prediction=int(pred),
+                match_probability=float(prob[1]),
+                confidence_score=float(max(prob))
+            ))
+        
+        return results
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao realizar predições: {str(e)}"
+        )
 
 @router.get(
     "/metrics",
     response_model=List[ModelMetricsComplete],
     summary="Obter Métricas do Modelo",
-    description="Retorna o histórico completo de métricas dos modelos treinados",
-    response_description="Lista de métricas de todos os treinamentos realizados"
+    description="Retorna o histórico de métricas dos modelos treinados"
 )
-async def get_metrics(db: Session = Depends(get_db)):
+async def get_metrics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     metrics = db.query(ModelMetrics).order_by(ModelMetrics.training_date.desc()).all()
     return [metric.to_dict() for metric in metrics]

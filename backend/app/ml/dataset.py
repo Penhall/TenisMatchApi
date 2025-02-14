@@ -1,9 +1,8 @@
 # /backend/app/ml/dataset.py
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional, Union
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from app.schemas.tennis import TenisBase
 
 class DatasetPreparation:
     def __init__(self):
@@ -20,29 +19,43 @@ class DatasetPreparation:
         self.style_encoder.fit(self.styles)
         self.brand_encoder.fit(self.brands)
         self.color_encoder.fit(self.colors)
+        
+        # Flag para controlar se o scaler já foi fitted
+        self._is_scaler_fitted = False
     
-    def prepare_features(self, data: List[Dict[str, Any]]) -> Tuple[pd.DataFrame, pd.Series]:
+    def prepare_features(
+        self,
+        data: Union[List[Dict[str, Any]], pd.DataFrame]
+    ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.Series]]:
         """
         Prepara features para treinamento ou predição
         """
-        df = pd.DataFrame(data)
+        # Converte para DataFrame se não for
+        if isinstance(data, list):
+            df = pd.DataFrame(data)
+        else:
+            df = data.copy()
         
         # Encoding categórico
         X = pd.DataFrame({
             'tenis_estilo': self.style_encoder.transform(df['tenis_estilo']),
             'tenis_marca': self.brand_encoder.transform(df['tenis_marca']),
             'tenis_cores': self.color_encoder.transform(df['tenis_cores']),
-            'tenis_preco': df['tenis_preco']
         })
         
         # Normalização do preço
-        X['tenis_preco'] = self.scaler.fit_transform(X[['tenis_preco']])
+        price_values = df['tenis_preco'].values.reshape(-1, 1)
+        if not self._is_scaler_fitted:
+            X['tenis_preco'] = self.scaler.fit_transform(price_values)
+            self._is_scaler_fitted = True
+        else:
+            X['tenis_preco'] = self.scaler.transform(price_values)
         
-        if 'match_success' in df.columns:
-            y = df['match_success']
-            return X, y
+        if 'match_success' not in df.columns:            
+            return X
         
-        return X
+        y = df['match_success']
+        return X, y
     
     @staticmethod
     def generate_synthetic_data(n_samples: int = 1000) -> List[Dict[str, Any]]:
@@ -53,16 +66,14 @@ class DatasetPreparation:
         data = []
         
         for _ in range(n_samples):
-            # Gera um registro sintético
             record = {
                 'tenis_estilo': np.random.choice(prep.styles),
                 'tenis_marca': np.random.choice(prep.brands),
                 'tenis_cores': np.random.choice(prep.colors),
-                'tenis_preco': np.random.randint(100, 1000),
+                'tenis_preco': float(np.random.randint(100, 1000)),
                 'match_success': 1 if np.random.random() < 0.5 else 0
             }
             
-            # Ajusta probabilidade baseado em regras de negócio
             prob = prep._calculate_match_probability(record)
             record['match_success'] = 1 if np.random.random() < prob else 0
             
