@@ -26,7 +26,7 @@ class DatasetPreparation:
     def prepare_features(
         self,
         data: Union[List[Dict[str, Any]], pd.DataFrame]
-    ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.Series]]:
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Prepara features para treinamento ou predição
         """
@@ -37,25 +37,29 @@ class DatasetPreparation:
             df = data.copy()
         
         # Encoding categórico
-        X = pd.DataFrame({
-            'tenis_estilo': self.style_encoder.transform(df['tenis_estilo']),
-            'tenis_marca': self.brand_encoder.transform(df['tenis_marca']),
-            'tenis_cores': self.color_encoder.transform(df['tenis_cores']),
-        })
+        encoded_features = np.zeros((len(df), 4))  # 4 features: estilo, marca, cores, preço
+        
+        encoded_features[:, 0] = self.style_encoder.transform(df['tenis_estilo'])
+        encoded_features[:, 1] = self.brand_encoder.transform(df['tenis_marca'])
+        encoded_features[:, 2] = self.color_encoder.transform(df['tenis_cores'])
         
         # Normalização do preço
         price_values = df['tenis_preco'].values.reshape(-1, 1)
         if not self._is_scaler_fitted:
-            X['tenis_preco'] = self.scaler.fit_transform(price_values)
+            normalized_price = self.scaler.fit_transform(price_values).ravel()
             self._is_scaler_fitted = True
         else:
-            X['tenis_preco'] = self.scaler.transform(price_values)
+            normalized_price = self.scaler.transform(price_values).ravel()
         
+        encoded_features[:, 3] = normalized_price
+        
+        # Se não tiver match_success, retorna apenas as features
         if 'match_success' not in df.columns:            
-            return X
+            return encoded_features
         
-        y = df['match_success']
-        return X, y
+        # Se tiver match_success, retorna features e target
+        y = df['match_success'].values
+        return encoded_features, y
     
     @staticmethod
     def generate_synthetic_data(n_samples: int = 1000) -> List[Dict[str, Any]]:

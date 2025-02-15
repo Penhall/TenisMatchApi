@@ -14,6 +14,7 @@ from sklearn.metrics import (
 )
 import joblib
 import numpy as np
+import pandas as pd
 from typing import Dict, Any, Tuple, List
 from datetime import datetime
 from app.core.config import settings
@@ -76,9 +77,10 @@ class ModelTraining:
             )
         ]
         
-        # Feature importance
+        # Feature importance com nomes de features fixos
+        feature_names = ['estilo', 'marca', 'cores', 'preco']
         feature_importance = dict(zip(
-            X.columns,
+            feature_names,
             self.model.feature_importances_
         ))
         
@@ -87,7 +89,7 @@ class ModelTraining:
             **metrics_dict,
             roc_curve_data=roc_data,
             confusion_matrix=cm_data,
-            training_date=datetime.utcnow()  # Adicionando a data de treinamento
+            training_date=datetime.utcnow()
         )
         
         return metrics, feature_importance
@@ -96,8 +98,23 @@ class ModelTraining:
         """
         Faz predições usando o modelo treinado
         """
+        # Garante que X seja um array numpy
+        if isinstance(X, tuple):
+            X = X[0]  # Se for uma tupla, pega o primeiro elemento (features)
+            
+        # Converte para array numpy se não for
+        if isinstance(X, list):
+            X = np.array(X)
+        elif isinstance(X, pd.DataFrame):
+            X = X.values
+            
+        # Garante que X seja 2D
+        if len(X.shape) == 1:
+            X = X.reshape(1, -1)
+            
         predictions = self.model.predict(X)
         probabilities = self.model.predict_proba(X)
+        
         return predictions, probabilities
     
     def save_model(self, filename: str = None):

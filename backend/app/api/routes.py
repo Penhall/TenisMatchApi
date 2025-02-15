@@ -6,6 +6,7 @@ import pandas as pd
 import io
 from fastapi.responses import Response  
 from datetime import datetime
+import numpy as np
 
 
 from app.database.session import get_db
@@ -198,28 +199,31 @@ async def predict(
         records = request.dict()['records']
         
         # Prepara features
-        X = prep.prepare_features(records)
+        features = prep.prepare_features(records)
         
         # Carrega modelo e faz predições
         trainer = ModelTraining()
         trainer.load_model()
-        predictions, probabilities = trainer.predict(X)
+        predictions, probabilities = trainer.predict(features)
         
         # Formata resultados
         results = []
-        for pred, prob in zip(predictions, probabilities):
+        for i in range(len(predictions)):
+            prob = probabilities[i]
             results.append(PredictionResponse(
-                match_prediction=int(pred),
+                match_prediction=int(predictions[i]),
                 match_probability=float(prob[1]),
-                confidence_score=float(max(prob))
+                confidence_score=float(np.max(prob))
             ))
         
         return results
         
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         raise HTTPException(
             status_code=500,
-            detail=f"Erro ao realizar predições: {str(e)}"
+            detail=f"Erro ao realizar predições: {str(e)}\n{error_details}"
         )
 
 @router.get(
