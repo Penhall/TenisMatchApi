@@ -201,6 +201,52 @@ LOG_LEVEL=INFO
 VITE_API_URL=http://localhost:8000
 ```
 
+🔑 Usuários Padrão
+O sistema vem com dois usuários pré-configurados para testes:
+
+Administrador
+
+Email: admin@tenismatch.com
+Senha: abc123
+Acesso total ao sistema
+
+
+Testador
+
+Email: tester@tenismatch.com
+Senha: abc123
+Acesso limitado para testes
+
+
+
+📊 Sistema de Logging
+
+Implementado com Loguru
+Logs salvos em: ./logs/api.log
+Rotação automática: 500MB
+Retenção: 10 dias
+Compressão em zip
+Debug em desenvolvimento, Info em produção
+
+Adicionar na seção "Instalando as dependências":
+bashCopypip install loguru  # Necessário para o sistema de logging
+pip install -r requirements.txt
+Atualizar a seção "Testes" para:
+🧪 Testes
+Backend
+O sistema inclui testes automatizados completos:
+bashCopy# Testes unitários
+pytest
+
+# Testes de endpoint
+python test_endpoints.py
+Para mais detalhes sobre os testes de endpoint, consulte:
+
+Guia_Swagger.md: Tutorial interativo da API
+Guia_Testes_Endpoint.md: Documentação dos testes automatizados
+
+
+
 ## 🤝 Contribuindo
 
 1. Faça um Fork do projeto

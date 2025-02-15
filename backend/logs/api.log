@@ -3,3 +3,27 @@
 2025-02-14 21:17:29 | INFO     | app.main:lifespan:23 - Iniciando aplicação...
 2025-02-14 21:17:29 | INFO     | app.main:lifespan:28 - Usuários padrão criados com sucesso
 2025-02-14 21:17:29 | INFO     | logging:callHandlers:1736 - Application startup complete.
+2025-02-14 21:18:31 | INFO     | app.main:root:146 - Requisição à rota raiz
+2025-02-14 21:18:31 | INFO     | app.main:add_process_time_header:67 - Request processado: GET / - Tempo: 0.00s
+2025-02-14 21:18:31 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57132 - "GET / HTTP/1.1" 200
+2025-02-14 21:18:34 | INFO     | app.main:add_process_time_header:67 - Request processado: POST /api/v1/auth/token - Tempo: 0.53s
+2025-02-14 21:18:34 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57134 - "POST /api/v1/auth/token HTTP/1.1" 200
+2025-02-14 21:18:36 | INFO     | app.main:add_process_time_header:67 - Request processado: GET /api/v1/auth/me - Tempo: 0.02s
+2025-02-14 21:18:36 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57136 - "GET /api/v1/auth/me HTTP/1.1" 200
+2025-02-14 21:18:38 | INFO     | app.main:add_process_time_header:67 - Request processado: POST /api/v1/auth/token - Tempo: 0.51s
+2025-02-14 21:18:38 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57138 - "POST /api/v1/auth/token HTTP/1.1" 200
+2025-02-14 21:18:40 | INFO     | app.main:add_process_time_header:67 - Request processado: GET /api/v1/auth/me - Tempo: 0.01s
+2025-02-14 21:18:40 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57144 - "GET /api/v1/auth/me HTTP/1.1" 200
+2025-02-14 21:18:42 | INFO     | app.main:add_process_time_header:67 - Request processado: GET /api/v1/tennis/template-csv - Tempo: 0.01s
+2025-02-14 21:18:42 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57146 - "GET /api/v1/tennis/template-csv HTTP/1.1" 200
+2025-02-14 21:18:45 | INFO     | app.main:add_process_time_header:67 - Request processado: POST /api/v1/tennis/upload-csv - Tempo: 0.20s
+2025-02-14 21:18:45 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57148 - "POST /api/v1/tennis/upload-csv HTTP/1.1" 200
+2025-02-14 21:18:48 | INFO     | app.main:add_process_time_header:67 - Request processado: POST /api/v1/tennis/train - Tempo: 0.41s
+2025-02-14 21:18:48 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57150 - "POST /api/v1/tennis/train HTTP/1.1" 200
+2025-02-14 21:18:50 | INFO     | app.main:add_process_time_header:67 - Request processado: POST /api/v1/tennis/predict - Tempo: 0.10s
+2025-02-14 21:18:50 | INFO     | logging:callHandlers:1736 - 127.0.0.1:57152 - "POST /api/v1/tennis/predict HTTP/1.1" 200
+2025-02-14 21:19:59 | INFO     | logging:callHandlers:1736 - Shutting down
+2025-02-14 21:19:59 | INFO     | logging:callHandlers:1736 - Waiting for application shutdown.
+2025-02-14 21:19:59 | INFO     | app.main:lifespan:38 - Encerrando aplicação...
+2025-02-14 21:19:59 | INFO     | logging:callHandlers:1736 - Application shutdown complete.
+2025-02-14 21:19:59 | INFO     | logging:callHandlers:1736 - Finished server process [15124]
