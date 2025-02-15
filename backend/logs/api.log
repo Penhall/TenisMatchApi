@@ -1,0 +1,5 @@
+2025-02-14 21:17:29 | INFO     | logging:callHandlers:1736 - Started server process [15124]
+2025-02-14 21:17:29 | INFO     | logging:callHandlers:1736 - Waiting for application startup.
+2025-02-14 21:17:29 | INFO     | app.main:lifespan:23 - Iniciando aplicação...
+2025-02-14 21:17:29 | INFO     | app.main:lifespan:28 - Usuários padrão criados com sucesso
+2025-02-14 21:17:29 | INFO     | logging:callHandlers:1736 - Application startup complete.
